@@ -15,6 +15,7 @@ client/.env.local
 # Server build artifacts
 server/target/
 server/.env
+server/src/main/resources/application-local.yml
 
 # IDE
 .idea/
