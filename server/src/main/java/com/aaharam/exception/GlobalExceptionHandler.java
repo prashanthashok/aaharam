@@ -1,4 +1,4 @@
-package com.nutriscan.exception;
+package com.aaharam.exception;
 
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpStatus;

@@ -1,4 +1,4 @@
-package com.nutriscan.config;
+package com.aaharam.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

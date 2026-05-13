@@ -1,4 +1,4 @@
-package com.nutriscan.controller;
+package com.aaharam.controller;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;

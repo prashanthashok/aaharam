@@ -80,7 +80,7 @@ aaharam/
 │   │   └── App.jsx  # Router configuration
 │   └── .env.example
 ├── server/          # Spring Boot 3 backend
-│   ├── src/main/java/com/nutriscan/
+│   ├── src/main/java/com/aaharam/
 │   │   ├── config/
 │   │   ├── controller/
 │   │   ├── service/

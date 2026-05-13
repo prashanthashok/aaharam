@@ -1,8 +1,8 @@
-package com.nutriscan;
+package com.aaharam;
 
 import org.junit.jupiter.api.Test;
 
-class NutriscanApplicationTests {
+class AaharamApplicationTests {
 
     @Test
     void contextLoads() {

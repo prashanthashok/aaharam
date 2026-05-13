@@ -1,4 +1,4 @@
-package com.nutriscan.config;
+package com.aaharam.config;
 
 import lombok.Getter;
 import lombok.Setter;

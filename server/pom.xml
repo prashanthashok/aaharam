@@ -9,7 +9,7 @@
     <version>3.3.0</version>
     <relativePath/>
   </parent>
-  <groupId>com.nutriscan</groupId>
+  <groupId>com.aaharam</groupId>
   <artifactId>aaharam-server</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   <name>aaharam-server</name>

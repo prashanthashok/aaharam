@@ -1,4 +1,4 @@
-package com.nutriscan.config;
+package com.aaharam.config;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTVerifier;

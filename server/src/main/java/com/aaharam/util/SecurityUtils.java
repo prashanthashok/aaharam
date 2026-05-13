@@ -1,4 +1,4 @@
-package com.nutriscan.util;
+package com.aaharam.util;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
