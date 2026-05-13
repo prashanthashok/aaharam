@@ -1,11 +1,28 @@
-import { useState } from 'react'
-import { ScanLine, Search, X, ChevronRight } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { ScanLine, Search, X, ChevronRight, Clock } from 'lucide-react'
 import BarcodeScanner from '../components/BarcodeScanner'
 import { apiFetch } from '../lib/api'
 import { useToast } from '../context/ToastContext'
 
 const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack']
 const TODAY = new Date().toISOString().slice(0, 10)
+const RECENT_KEY = 'recentFoods'
+const MEAL_KEY = 'lastMealType'
+const MAX_RECENT = 5
+
+// ── localStorage helpers ──────────────────────────────────────────────────────
+function getRecent() {
+  try { return JSON.parse(localStorage.getItem(RECENT_KEY) ?? '[]') } catch { return [] }
+}
+function saveRecent(list) {
+  localStorage.setItem(RECENT_KEY, JSON.stringify(list))
+}
+function getLastMealType() {
+  return localStorage.getItem(MEAL_KEY) ?? 'breakfast'
+}
+function saveLastMealType(type) {
+  localStorage.setItem(MEAL_KEY, type)
+}
 
 export default function LogPage() {
   const { showToast } = useToast()
@@ -19,15 +36,16 @@ export default function LogPage() {
   const [searchResults, setSearchResults] = useState([])
   const [searchLoading, setSearchLoading] = useState(false)
   const [searchError, setSearchError] = useState('')
+  const [recentFoods, setRecentFoods] = useState(getRecent)
 
   // Shared food lookup state
   const [foodLoading, setFoodLoading] = useState(false)
   const [foodError, setFoodError] = useState('')
 
   // Add-to-log modal
-  const [modal, setModal] = useState(null) // { food: FoodDto }
+  const [modal, setModal] = useState(null)
   const [serving, setServing] = useState('100')
-  const [mealType, setMealType] = useState('breakfast')
+  const [mealType, setMealType] = useState(getLastMealType)
   const [logDate, setLogDate] = useState(TODAY)
   const [logLoading, setLogLoading] = useState(false)
   const [logSuccess, setLogSuccess] = useState(false)
@@ -42,7 +60,7 @@ export default function LogPage() {
       openModal(food)
     } catch (err) {
       setFoodError(err.message)
-      setScanActive(false) // let BarcodeScanner remount on retry
+      setScanActive(false)
     } finally {
       setFoodLoading(false)
     }
@@ -74,7 +92,7 @@ export default function LogPage() {
   function openModal(food) {
     setModal({ food })
     setServing('100')
-    setMealType('breakfast')
+    setMealType(getLastMealType())
     setLogDate(TODAY)
     setLogSuccess(false)
     setLogError('')
@@ -85,14 +103,19 @@ export default function LogPage() {
     setScanActive(true)
   }
 
+  function handleMealTypeChange(type) {
+    setMealType(type)
+    saveLastMealType(type)
+  }
+
   function computedMacros(food) {
     const s = parseFloat(serving) || 0
     const factor = s / 100
     return {
       calories: round(food.caloriesPer100g * factor),
-      protein: round(food.proteinPer100g * factor),
-      carbs: round(food.carbsPer100g * factor),
-      fat: round(food.fatPer100g * factor),
+      protein:  round(food.proteinPer100g  * factor),
+      carbs:    round(food.carbsPer100g    * factor),
+      fat:      round(food.fatPer100g      * factor),
     }
   }
 
@@ -105,18 +128,27 @@ export default function LogPage() {
       await apiFetch('/api/log', {
         method: 'POST',
         body: JSON.stringify({
-          foodName: modal.food.name,
-          brand: modal.food.brand,
-          barcode: modal.food.barcode,
-          servingG: parseFloat(serving),
+          foodName:  modal.food.name,
+          brand:     modal.food.brand,
+          barcode:   modal.food.barcode,
+          servingG:  parseFloat(serving),
           mealType,
           loggedDate: logDate,
-          calories: macros.calories,
-          proteinG: macros.protein,
-          carbsG: macros.carbs,
-          fatG: macros.fat,
+          calories:  macros.calories,
+          proteinG:  macros.protein,
+          carbsG:    macros.carbs,
+          fatG:      macros.fat,
         }),
       })
+
+      // Update recent foods
+      const updated = [
+        modal.food,
+        ...recentFoods.filter(f => f.barcode !== modal.food.barcode && f.name !== modal.food.name),
+      ].slice(0, MAX_RECENT)
+      setRecentFoods(updated)
+      saveRecent(updated)
+
       setLogSuccess(true)
       showToast(`${modal.food.name} added to log`, 'success')
     } catch (err) {
@@ -163,6 +195,23 @@ export default function LogPage() {
       {/* ── Search tab ── */}
       {activeTab === 'search' && (
         <div className="space-y-4">
+          {/* Recent foods */}
+          {recentFoods.length > 0 && searchResults.length === 0 && !searchLoading && (
+            <section>
+              <div className="flex items-center gap-1.5 mb-2 px-0.5">
+                <Clock className="w-3.5 h-3.5 text-slate-400" />
+                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Recent</span>
+              </div>
+              <ul className="space-y-2">
+                {recentFoods.map((food, i) => (
+                  <FoodResultCard key={food.barcode ?? food.name ?? i} food={food} onAdd={() => openModal(food)} />
+                ))}
+              </ul>
+              <div className="border-t border-slate-100 mt-4" />
+            </section>
+          )}
+
+          {/* Search form */}
           <form onSubmit={handleSearch} className="flex gap-2">
             <input
               type="search"
@@ -180,7 +229,15 @@ export default function LogPage() {
             <p className="text-sm text-rose-600 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2">{searchError}</p>
           )}
 
-          {searchResults.length > 0 && (
+          {searchLoading && (
+            <ul className="space-y-2 animate-pulse">
+              {[1, 2, 3].map(i => (
+                <li key={i} className="h-16 rounded-xl bg-slate-200" />
+              ))}
+            </ul>
+          )}
+
+          {!searchLoading && searchResults.length > 0 && (
             <ul className="space-y-2">
               {searchResults.map((food, i) => (
                 <FoodResultCard key={food.barcode ?? i} food={food} onAdd={() => openModal(food)} />
@@ -245,7 +302,7 @@ export default function LogPage() {
                     {MEAL_TYPES.map(m => (
                       <button
                         key={m}
-                        onClick={() => setMealType(m)}
+                        onClick={() => handleMealTypeChange(m)}
                         className={`py-1.5 rounded-lg text-xs font-medium capitalize transition-colors ${
                           mealType === m
                             ? 'bg-indigo-600 text-white'
@@ -289,7 +346,7 @@ export default function LogPage() {
   )
 }
 
-// ── Sub-components ──────────────────────────────────────────────────────────
+// ── Sub-components ────────────────────────────────────────────────────────────
 
 function TabButton({ active, onClick, children }) {
   return (
@@ -316,7 +373,10 @@ function FoodResultCard({ food, onAdd }) {
           </p>
         )}
       </div>
-      <button onClick={onAdd} className="flex-shrink-0 text-xs font-semibold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap">
+      <button
+        onClick={onAdd}
+        className="flex-shrink-0 text-xs font-semibold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap"
+      >
         Add
       </button>
     </li>
@@ -328,10 +388,10 @@ function MacroPreview({ food, serving }) {
   const f = s / 100
   return (
     <div className="rounded-xl bg-slate-50 border border-slate-200 px-4 py-3 grid grid-cols-4 gap-2 text-center">
-      <MacroCell label="kcal" value={round(food.caloriesPer100g * f)} color="text-slate-700" />
-      <MacroCell label="protein" value={`${round(food.proteinPer100g * f)}g`} color="text-protein" />
-      <MacroCell label="carbs" value={`${round(food.carbsPer100g * f)}g`} color="text-carbs" />
-      <MacroCell label="fat" value={`${round(food.fatPer100g * f)}g`} color="text-fat" />
+      <MacroCell label="kcal"    value={round(food.caloriesPer100g * f)} color="text-slate-700" />
+      <MacroCell label="protein" value={`${round(food.proteinPer100g  * f)}g`} color="text-protein" />
+      <MacroCell label="carbs"   value={`${round(food.carbsPer100g    * f)}g`} color="text-carbs" />
+      <MacroCell label="fat"     value={`${round(food.fatPer100g      * f)}g`} color="text-fat" />
     </div>
   )
 }
@@ -347,9 +407,7 @@ function MacroCell({ label, value, color }) {
 
 function Spinner({ small }) {
   const size = small ? 'w-4 h-4' : 'w-6 h-6'
-  return (
-    <div className={`${size} border-2 border-indigo-600 border-t-transparent rounded-full animate-spin`} />
-  )
+  return <div className={`${size} border-2 border-indigo-600 border-t-transparent rounded-full animate-spin`} />
 }
 
 function round(v) {
