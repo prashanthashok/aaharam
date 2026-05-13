@@ -1,0 +1,11 @@
+{
+  "name": "aaharam",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently --names client,server --prefix-colors cyan,yellow \"cd client && npm run dev\" \"cd server && mvn spring-boot:run\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

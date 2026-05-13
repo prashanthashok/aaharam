@@ -1,0 +1,32 @@
+@import "tailwindcss";
+
+/* Macro nutrient color utilities */
+.text-protein {
+  color: rgb(59 130 246);
+}
+.text-carbs {
+  color: rgb(251 191 36);
+}
+.text-fat {
+  color: rgb(251 113 133);
+}
+
+.bg-protein {
+  background-color: rgb(59 130 246);
+}
+.bg-carbs {
+  background-color: rgb(251 191 36);
+}
+.bg-fat {
+  background-color: rgb(251 113 133);
+}
+
+.border-protein {
+  border-color: rgb(59 130 246);
+}
+.border-carbs {
+  border-color: rgb(251 191 36);
+}
+.border-fat {
+  border-color: rgb(251 113 133);
+}
