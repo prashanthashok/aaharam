@@ -2,11 +2,13 @@ import { useState } from 'react'
 import { ScanLine, Search, X, ChevronRight } from 'lucide-react'
 import BarcodeScanner from '../components/BarcodeScanner'
 import { apiFetch } from '../lib/api'
+import { useToast } from '../context/ToastContext'
 
 const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack']
 const TODAY = new Date().toISOString().slice(0, 10)
 
 export default function LogPage() {
+  const { showToast } = useToast()
   const [activeTab, setActiveTab] = useState('scan')
 
   // Scan tab
@@ -116,8 +118,10 @@ export default function LogPage() {
         }),
       })
       setLogSuccess(true)
+      showToast(`${modal.food.name} added to log`, 'success')
     } catch (err) {
       setLogError(err.message)
+      showToast(err.message || 'Could not log food', 'error')
     } finally {
       setLogLoading(false)
     }

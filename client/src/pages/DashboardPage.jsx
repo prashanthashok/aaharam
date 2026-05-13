@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, Trash2, Plus, AlertTriangle } from 'lucide-react'
 import MacroProgressBar from '../components/MacroProgressBar'
 import { apiFetch } from '../lib/api'
+import { useToast } from '../context/ToastContext'
 
 const MEAL_LABELS = {
   breakfast: 'Breakfast',
@@ -81,6 +82,7 @@ function Skeleton() {
 // ── Main component ────────────────────────────────────────────────────────────
 export default function DashboardPage() {
   const navigate = useNavigate()
+  const { showToast } = useToast()
   const [date, setDate] = useState(new Date())
   const [meals, setMeals] = useState(null)   // null = loading
   const [goals, setGoals] = useState(null)
@@ -97,11 +99,12 @@ export default function DashboardPage() {
       setMeals(mealData)
       setGoals(goalsData)
       setHasGoals(true)
-    } catch {
+    } catch (err) {
       setMeals({})
       setHasGoals(false)
+      showToast(err.message || 'Could not load data', 'error')
     }
-  }, [])
+  }, [showToast])
 
   useEffect(() => {
     fetchData(date)
@@ -111,9 +114,10 @@ export default function DashboardPage() {
     setDeletingId(id)
     try {
       await apiFetch(`/api/log/${id}`, { method: 'DELETE' })
+      showToast('Entry deleted', 'info')
       await fetchData(date)
-    } catch {
-      // silently ignore — item stays visible
+    } catch (err) {
+      showToast(err.message || 'Could not delete entry', 'error')
     } finally {
       setDeletingId(null)
     }
