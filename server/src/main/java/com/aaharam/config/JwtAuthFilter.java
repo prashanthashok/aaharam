@@ -11,6 +11,8 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -23,6 +25,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class JwtAuthFilter extends OncePerRequestFilter {
 
+    private static final Logger log = LoggerFactory.getLogger(JwtAuthFilter.class);
     private static final String BEARER_PREFIX = "Bearer ";
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -42,7 +45,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         String token = authHeader.substring(BEARER_PREFIX.length());
 
         try {
-            Algorithm algorithm = Algorithm.HMAC256(supabaseProperties.getJwtSecret());
+            String secret = supabaseProperties.getJwtSecret().trim();
+            Algorithm algorithm = Algorithm.HMAC256(secret);
             JWTVerifier verifier = JWT.require(algorithm).build();
             DecodedJWT decoded = verifier.verify(token);
 
@@ -55,10 +59,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             chain.doFilter(request, response);
 
         } catch (JWTVerificationException e) {
+            log.warn("JWT verification failed: {}", e.getMessage());
             SecurityContextHolder.clearContext();
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-            MAPPER.writeValue(response.getWriter(), Map.of("error", "Invalid or expired token"));
+            MAPPER.writeValue(response.getWriter(), Map.of("error", "Invalid or expired token", "detail", e.getMessage()));
         }
     }
 }
