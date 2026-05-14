@@ -9,4 +9,5 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "supabase")
 public class SupabaseProperties {
     private String jwtSecret;
+    private String url;
 }
